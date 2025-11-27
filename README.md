@@ -120,9 +120,26 @@ result = await env.evaluate()
 
 ## Installation
 
+### Option 1: Using pip (Traditional)
+
 ```bash
 pip install -e .
 ```
+
+### Option 2: Using uv (Recommended, Faster)
+
+[uv](https://github.com/astral-sh/uv) is a modern, fast Python package manager written in Rust.
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Sync dependencies and install affinetes
+uv sync
+
+source .venv/bin/activate
+```
+
 
 **Requirements:**
 - Python 3.8+

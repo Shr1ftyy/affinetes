@@ -56,3 +56,6 @@ logs/
 *.tmp
 *.bak
 *.orig
+
+# uv
+.python-version
