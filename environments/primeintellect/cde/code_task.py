@@ -188,20 +188,36 @@ class CodeTask:
                 
                 # Get the function by name or find first callable
                 func = namespace.get(fn_name)
+
+                # If function not found directly, look for it in a class
+                if func is None:
+                    # First try to find a class and instantiate it
+                    for name, obj in namespace.items():
+                        if isinstance(obj, type) and not name.startswith('_'):
+                            # Found a class, instantiate it and get the method
+                            try:
+                                instance = obj()
+                                if hasattr(instance, fn_name):
+                                    func = getattr(instance, fn_name)
+                                    break
+                            except:
+                                pass
+
+                # If still not found, try to find any callable
                 if func is None:
                     for name, obj in namespace.items():
-                        if callable(obj) and not name.startswith('_'):
+                        if callable(obj) and not name.startswith('_') and not isinstance(obj, type):
                             func = obj
                             break
-                
+
                 if func is None:
                     logger.warning(f"Test {i}: No function found in code")
                     continue
-                
+
                 # Parse input (it's a JSON string)
                 test_input = json.loads(inputs[i])
                 expected_output = json.loads(outputs[i])
-                
+
                 # Run the function
                 if isinstance(test_input, list):
                     result = func(*test_input)
