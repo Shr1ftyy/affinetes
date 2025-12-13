@@ -93,7 +93,7 @@ def _execute_stdin_test_in_subprocess(code: str, stdin_input: str, memory_limit_
 
         # Get stdout output
         output = sys.stdout.getvalue()
-        result = (True, output)
+        result = (True, None, output)
 
     except MemoryError as e:
         result = (False, f"MemoryError: {str(e)}", "")
