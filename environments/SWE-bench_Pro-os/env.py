@@ -95,7 +95,7 @@ class Actor:
         model: str = "deepseek-ai/DeepSeek-V3",
         base_url: str = "https://llm.chutes.ai/v1",
         api_key: Optional[str] = None,
-        timeout: int = 600,
+        timeout: int = 1800,
         temperature: float = 0.0,
         seed: Optional[int] = None,
         max_iterations: int = 30,
