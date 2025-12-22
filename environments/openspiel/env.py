@@ -14,6 +14,7 @@ import pyspiel
 
 from llm_bot import LLMBot
 from game_config import create_game
+from agents import LiarsDiceAgent
 
 
 class Actor:
@@ -114,6 +115,12 @@ class Actor:
             # LLM always plays as player with id = llm_player_id % num_players
             llm_player_id = llm_player_id % num_players
 
+            # Get agent for this game (if available)
+            game_name = game_config["game_name"]
+            agent = None
+            if game_name == "liars_dice":
+                agent = LiarsDiceAgent()
+
             llm_bot = LLMBot(
                 game=game,
                 player_id=llm_player_id,
@@ -121,6 +128,7 @@ class Actor:
                     prompt, model, base_url, timeout, temperature, current_api_key, seed
                 ),
                 rng_seed=seed + 1,
+                agent=agent,  # NEW: Pass agent
             )
 
             # Create bots for all players

@@ -9,6 +9,7 @@ import time
 from typing import Callable, Awaitable, Tuple, Optional
 
 from game_rules import get_game_rules
+from base_agent import BaseGameAgent
 
 
 class LLMBot(pyspiel.Bot):
@@ -25,6 +26,7 @@ class LLMBot(pyspiel.Bot):
         player_id: int,
         llm_chat_fn: Callable[[str], Awaitable[Tuple[str, dict]]],
         rng_seed: int,
+        agent: Optional[BaseGameAgent] = None,
     ):
         """
         Initialize LLM Bot
@@ -34,12 +36,14 @@ class LLMBot(pyspiel.Bot):
             player_id: Player ID (0 or 1)
             llm_chat_fn: Async function to call LLM API, returns (content, usage)
             rng_seed: Random seed for fallback action selection
+            agent: Optional BaseGameAgent for game-specific logic
         """
         pyspiel.Bot.__init__(self)
         self._game = game
         self._player_id = player_id
         self._llm_chat_fn = llm_chat_fn
         self._rng = np.random.RandomState(rng_seed)
+        self._agent = agent  # NEW: Store agent for prompt generation
 
         # Track action history for prompt construction
         self._action_history = []
@@ -161,11 +165,17 @@ class LLMBot(pyspiel.Bot):
         """
         Generate LLM prompt
 
-        Reuses OpenSpiel's state description capabilities:
-        - state.__str__(): Game state string representation
-        - state.action_to_string(): Readable action description
-        - get_game_rules(): Load game rules from game_rules/ directory
+        Uses Agent if available, otherwise falls back to default logic.
         """
+        # Use agent's generate_prompt if available
+        if self._agent:
+            return self._agent.generate_prompt(
+                state=state,
+                player_id=self._player_id,
+                action_history=self._action_history
+            )
+        
+        # Fallback to original logic
         game_name = self._game.get_type().short_name
 
         # Load game rules if available
