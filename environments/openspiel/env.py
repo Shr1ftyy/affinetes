@@ -500,12 +500,16 @@ class Actor:
             llm_bot: LLMBot instance to extract conversation/usage (default: None)
             mcts_bots: List of TimedMCTSBot instances for timing stats (default: None)
         """
-        # Extract conversation and usage from llm_bot
+        # Extract conversation, action_history, final_state, and usage from llm_bot
         conversation = []
+        action_history = []
+        observation = None
         usage = None
         if llm_bot is not None:
             try:
                 conversation = llm_bot.get_conversation()
+                action_history = llm_bot.get_action_history()
+                observation = llm_bot.get_observation()
                 usage = llm_bot.get_total_usage()
             except:
                 pass
@@ -530,6 +534,8 @@ class Actor:
             "time_taken": time.time() - start_time,
             "extra": {
                 "conversation": conversation,
+                "action_history": action_history,
+                "observation": observation,
                 "game_name": game_name,
                 "task_id": task_id,
                 "seed": seed,

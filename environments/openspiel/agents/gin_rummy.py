@@ -84,4 +84,4 @@ IMPORTANT: Always respond with the action ID number ONLY, never card names."""
         Returns:
             tuple: (max_simulations, n_rollouts)
         """
-        return (300, 15)
+        return (300, 10)

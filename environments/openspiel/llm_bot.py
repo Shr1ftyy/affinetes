@@ -7,7 +7,7 @@ import asyncio
 import re
 import concurrent.futures
 import httpx
-from typing import Tuple, Optional, Dict, List
+from typing import Tuple, Optional, Dict, List, Any
 
 from base_agent import BaseGameAgent
 
@@ -80,20 +80,43 @@ class LLMBot(pyspiel.Bot):
         self._executor = executor
 
         self._conversation: List[Dict[str, str]] = []
+        self._action_history: List[Dict[str, Any]] = []
         self._system_prompt_generated = False
         self._last_error: Optional[str] = None
         self._total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        self._observation: Optional[str] = None
 
     def restart_at(self, state):
         """Reset to new game"""
         self._conversation.clear()
+        self._action_history.clear()
         self._system_prompt_generated = False
         self._last_error = None
         self._total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        self._observation = None
 
     def inform_action(self, state, player_id, action):
-        """Record other players' actions - not used in current implementation"""
-        pass
+        """Record all players' actions for game replay and verification"""
+        try:
+            action_str = state.action_to_string(player_id, action)
+        except:
+            action_str = str(action)
+        
+        # Convert numpy types to Python native types for JSON serialization
+        self._action_history.append({
+            "player_id": int(player_id),
+            "action": int(action),
+            "action_str": action_str,
+            "is_llm": bool(player_id == self._player_id)
+        })
+
+        try:
+            self._observation = state.observation_string()
+        except:
+            try:
+                self._observation = str(state)
+            except:
+                self._observation = None
 
     def step(self, state):
         """
@@ -137,8 +160,10 @@ class LLMBot(pyspiel.Bot):
             result = self._parse_action(response, state, legal_actions)
             
             if result['success']:
-                # Success: return action (conversation already recorded)
-                return result['action']
+                # Success: record action and return
+                action = result['action']
+                self.inform_action(state, self._player_id, action)
+                return action
             
             # Parsing failed - use simplified error message to avoid response contamination
             error_msg = (
@@ -256,15 +281,19 @@ class LLMBot(pyspiel.Bot):
                     else:
                         raise ValueError(f"API call failed after {max_retries} retries: {e}")
                 except httpx.HTTPStatusError as e:
-                    # Don't retry on client errors (4xx)
+                    error_text = str(e)
+                    # Don't retry on context length errors (contains "is longer than the model")
+                    if "is longer than the model" in error_text:
+                        raise ValueError(f"Context length exceeded: {error_text}") from e
+                    # Don't retry on other client errors (4xx)
                     if 400 <= e.response.status_code < 500:
-                        raise ValueError(f"API error: {e.response.status_code} - {e.response.text}")
+                        raise ValueError(f"API error: {e.response.status_code} - {error_text}") from e
                     # Retry on server errors (5xx)
                     if attempt < max_retries - 1:
                         wait_time = min(2 ** attempt, 32)
                         await asyncio.sleep(wait_time)
                     else:
-                        raise ValueError(f"API call failed after {max_retries} retries: {e}")
+                        raise ValueError(f"API call failed after {max_retries} retries: {e}") from e
 
             if not content_parts:
                 raise ValueError("LLM API returned empty content stream")
@@ -368,6 +397,10 @@ class LLMBot(pyspiel.Bot):
     def get_conversation(self):
         """Get conversation history (for debugging)"""
         return self._conversation
+    
+    def get_action_history(self):
+        """Get complete action history for all players"""
+        return self._action_history
 
     def get_last_error(self):
         """Get last error string (if any)"""
@@ -376,3 +409,7 @@ class LLMBot(pyspiel.Bot):
     def get_total_usage(self):
         """Get accumulated usage statistics"""
         return self._total_usage
+    
+    def get_observation(self):
+        """Get final observation string"""
+        return self._observation
