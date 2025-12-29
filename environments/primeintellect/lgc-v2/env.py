@@ -129,22 +129,25 @@ class Actor:
         # Generate challenge using task_id (auto-detects task type)
         try:
             challenge = await self.logic_task.generate(task_id=task_id)
-        except Exception as e:
-            # Generation failed - return failure response
-            import traceback
-            error_msg = f"{type(e).__name__}: {str(e)}"
-            return {
-                "task_name": "logic-v2:unknown",
-                "score": 0.0,
-                "success": False,
-                "time_taken": time.time() - start,
-                "extra": {
-                    "error": "generation_failed",
-                    "error_detail": error_msg,
-                    "task_id": task_id,
-                    "traceback": traceback.format_exc()
+        except ValueError as e:
+            # Only catch expected generation failures
+            if "Failed to generate valid sequence" in str(e):
+                import traceback
+                return {
+                    "task_name": "logic-v2:unknown",
+                    "score": 0.0,
+                    "success": False,
+                    "time_taken": time.time() - start,
+                    "extra": {
+                        "error": "generation_failed",
+                        "error_detail": str(e),
+                        "task_id": task_id,
+                        "traceback": traceback.format_exc()
+                    }
                 }
-            }
+            else:
+                # Other ValueErrors are unexpected, let them propagate
+                raise
 
         # Call LLM using task_id as seed
         usage = None
