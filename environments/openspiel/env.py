@@ -552,8 +552,8 @@ class Actor:
         if mcts_stats:
             result["extra"]["mcts_timing"] = mcts_stats
 
+        # Add error to top-level (consistent with other environments)
         if error:
-            # Error must be a string
-            result["extra"]["error"] = str(error)
+            result["error"] = str(error)
 
         return result
