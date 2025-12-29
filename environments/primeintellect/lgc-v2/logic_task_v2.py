@@ -36,9 +36,21 @@ class LogicTaskV2:
                 "nesting_depth": 0      # 0 = no minimum depth requirement
             }
         },
+        "game_of_24": {
+            "task_type_id": 1,  # Range: 100,000,000-199,999,999
+            "module": "games.game_of_24.generator",
+            "class": "GameOf24Generator",
+            "default_config": {
+                "num_of_numbers": 4,
+                "result": 24,
+                "min_candidate": 1,
+                "max_candidate": 9,
+                "operators": ["+", "-", "*", "/"]
+            }
+        },
         # Add more seed-based tasks here in the future
         # "your_task": {
-        #     "task_type_id": 1,  # Range: 100,000,000-199,999,999
+        #     "task_type_id": 2,  # Range: 200,000,000-299,999,999
         #     "module": "games.your_task.generator",
         #     "class": "YourTaskGenerator",
         #     "default_config": {...}

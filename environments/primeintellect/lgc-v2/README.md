@@ -123,8 +123,66 @@ task_type, seed = LogicTaskV2.decode_task_id(500)  # → ("dyck_language", 500)
 | Task Type | ID Range | Capacity |
 |-----------|----------|----------|
 | dyck_language | 0-99,999,999 | 100M |
-| Reserved 1 | 100,000,000-199,999,999 | 100M |
-| Reserved 2 | 200,000,000-299,999,999 | 100M |
+| game_of_24 | 100,000,000-199,999,999 | 100M |
+| Reserved 1 | 200,000,000-299,999,999 | 100M |
 
 ## Documentation
 - `games/dyck_language/README.md` - Example task documentation
+
+## TODO: Task Integration Roadmap
+
+Based on analysis of 33 task types from `lgc/i3_logic`, the following tasks are candidates for integration:
+
+### High Priority (Ready for Integration)
+
+1. **game_of_24** (24 Game)
+   - Given 4 numbers, use arithmetic operations to get 24
+   - Simple generation, clear verification, unique solutions
+   - Config: number range, operator complexity
+
+2. **operation** (Symbol Operations)
+   - Define custom operators (e.g., a△b = 2a+b), then evaluate expressions
+   - Deterministic generation, supports conditional branches
+   - Config: symbol count, complexity, nesting depth
+
+3. **cryptarithm** (Cryptarithmetic Puzzles)
+   - SEND + MORE = MONEY (letters represent digits)
+   - Pure logic reasoning with unique solution verification
+   - Config: letter count (1-9), operators (+,-,*), operation count
+
+4. **boolean_expressions** (Boolean Logic)
+   - Evaluate nested logical statements with true/false facts
+   - Pure logic, simple verification
+   - Config: nesting depth (2-5), option count (3-6)
+
+### Medium Priority (Requires Adaptation)
+
+5. **web_of_lies** (Truth-Teller Logic)
+   - Deduce who tells truth/lies from given statements
+   - Complex reasoning, unique solutions
+   - Challenge: complex generation logic
+
+6. **object_counting** (Counting Problems)
+   - Multi-step counting scenarios with narrative context
+   - Practical math reasoning
+   - Challenge: story template handling
+
+7. **time_sequence** (Schedule Reasoning)
+   - Optimize schedules given rules and constraints
+   - Real-world application scenarios
+   - Challenge: complex verification logic
+
+### Puzzle Games (For Specialized Training)
+
+8. **sudoku**, **futoshiki**, **number_wall**, **minesweeper**
+   - Classic grid-based logic puzzles
+   - Well-defined rules with unique solutions
+
+### Integration Order
+
+Recommended sequence based on implementation complexity and value:
+1. ✅ dyck_language (completed)
+2. 🔄 game_of_24 (in progress)
+3. ⏳ operation
+4. ⏳ cryptarithm
+5. ⏳ boolean_expressions
