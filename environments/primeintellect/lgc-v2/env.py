@@ -93,7 +93,8 @@ class Actor:
         timeout=600,
         temperature=0.7,
         api_key: str = None,
-        task_id: int = None
+        task_id: int = None,
+        seed: int = None,
     ):
         """
         Run evaluation on a single logic task
