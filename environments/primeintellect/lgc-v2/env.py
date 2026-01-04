@@ -75,8 +75,12 @@ class Actor:
 
     async def _llm_chat(self, prompt, model, base_url, timeout, temperature, current_api_key, seed=None):
         """Call LLM API with specified API key and optional seed (streaming mode)"""
-        # Reuse client to avoid connection leaks
-        client = self._get_or_create_client(base_url, current_api_key, timeout)
+        import asyncio
+
+        # Use 20s timeout for streaming to avoid hanging
+        stream_timeout = 20.0
+        # Create client with 20s timeout to enforce fast failure
+        client = self._get_or_create_client(base_url, current_api_key, stream_timeout)
 
         # Prepare API call parameters with streaming enabled
         params = {
@@ -91,14 +95,33 @@ class Actor:
         if seed is not None:
             params["seed"] = seed
 
-        stream = await client.chat.completions.create(**params)
+        # Create stream with 20s timeout for initial connection
+        try:
+            stream = await asyncio.wait_for(
+                client.chat.completions.create(**params),
+                timeout=20.0
+            )
+        except asyncio.TimeoutError:
+            raise TimeoutError("Stream timeout: failed to establish connection within 20 seconds")
 
         # Collect streamed content and usage
         content_parts = []
         usage = None
 
         try:
-            async for chunk in stream:
+            # Stream with 20s timeout for each chunk using async generator wrapper
+            async def stream_with_timeout():
+                stream_iter = stream.__aiter__()
+                while True:
+                    try:
+                        chunk = await asyncio.wait_for(stream_iter.__anext__(), timeout=20.0)
+                        yield chunk
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        raise TimeoutError("Stream timeout: no new data received for 20 seconds")
+
+            async for chunk in stream_with_timeout():
                 # Collect content chunks
                 if chunk.choices and chunk.choices[0].delta.content:
                     content_parts.append(chunk.choices[0].delta.content)
