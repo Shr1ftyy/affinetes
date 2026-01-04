@@ -186,6 +186,17 @@ Examples:
         help='Number of tests to run (default: 100)'
     )
     validate_parser.add_argument(
+        '--task-id-start',
+        type=int,
+        default=1,
+        help='Starting task_id (default: 1)'
+    )
+    validate_parser.add_argument(
+        '--task-id-end',
+        type=int,
+        help='Ending task_id (default: start + num_tests - 1)'
+    )
+    validate_parser.add_argument(
         '--output',
         default='rollouts',
         help='Output directory for rollouts (default: rollouts/)'
@@ -321,6 +332,8 @@ def main():
             asyncio.run(test_environment(
                 env_dir=args.env_dir,
                 num_tests=args.num_tests,
+                task_id_start=args.task_id_start,
+                task_id_end=args.task_id_end,
                 output_dir=args.output,
                 api_key=args.api_key,
                 base_url=args.base_url,

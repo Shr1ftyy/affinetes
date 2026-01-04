@@ -259,6 +259,8 @@ def _create_http_based_env(env_path: Path) -> None:
 async def test_environment(
     env_dir: str,
     num_tests: int,
+    task_id_start: int,
+    task_id_end: Optional[int],
     output_dir: str,
     api_key: Optional[str],
     base_url: Optional[str],
@@ -338,8 +340,20 @@ async def test_environment(
 
         results = []
 
+        # Determine task_id range
+        if task_id_end is None:
+            task_id_end = task_id_start + num_tests - 1
+
+        # Calculate actual number of tests based on range
+        actual_num_tests = task_id_end - task_id_start + 1
+
+        if actual_num_tests != num_tests:
+            logger.info(f"Note: task_id range [{task_id_start}, {task_id_end}] = {actual_num_tests} tests (overriding --num-tests={num_tests})")
+            num_tests = actual_num_tests
+
         # Test: Generate tests with seed consistency validation
-        logger.info(f"\nRunning {num_tests} tests (each test runs twice to validate seed consistency)")
+        logger.info(f"\nRunning {num_tests} tests with task_id range [{task_id_start}, {task_id_end}]")
+        logger.info("Each test runs twice to validate seed consistency")
         logger.info("-"*80)
 
         try:
@@ -361,8 +375,7 @@ async def test_environment(
             seed_consistency_failures = 0
             all_prompts = {}  # Track all prompts to verify diversity
 
-            for i in range(num_tests):
-                task_id = i + 1
+            for i, task_id in enumerate(range(task_id_start, task_id_end + 1)):
 
                 try:
                     # Run same task_id twice to validate seed consistency
@@ -431,15 +444,21 @@ async def test_environment(
             total_prompts = len(all_prompts)
             seed_diversity_rate = unique_prompts / total_prompts if total_prompts > 0 else 0
 
-            # Save individual rollouts
-            for i, rollout in enumerate(rollouts):
-                output_file = output_path / f"test_{i+1:03d}.json"
+            # Save individual rollouts with task_id in filename
+            for rollout in rollouts:
+                # Get task_id from top level or from extra
+                task_id = rollout.get("task_id") or rollout.get("extra", {}).get("task_id", 0)
+                output_file = output_path / f"test_task{task_id:05d}.json"
                 with open(output_file, 'w', encoding='utf-8') as f:
                     json.dump(rollout, f, indent=2, ensure_ascii=False)
 
             # Save summary
             summary = {
                 "total_tests": num_tests,
+                "task_id_range": {
+                    "start": task_id_start,
+                    "end": task_id_end
+                },
                 "success_count": success_count,
                 "success_rate": success_count / num_tests if num_tests > 0 else 0,
                 "seed_consistency_failures": seed_consistency_failures,
