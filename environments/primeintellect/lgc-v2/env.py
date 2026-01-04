@@ -78,7 +78,7 @@ class Actor:
 
         return client
 
-    async def _llm_chat(self, prompt, model, base_url, timeout, temperature, current_api_key, seed=None, max_tokens=16384):
+    async def _llm_chat(self, prompt, model, base_url, timeout, temperature, current_api_key, seed=None):
         """Call LLM API with specified API key and optional seed (streaming mode)"""
         import asyncio
 
@@ -90,7 +90,6 @@ class Actor:
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
-            "max_tokens": max_tokens,
             "stream": True,
             "stream_options": {"include_usage": True}
         }
@@ -154,7 +153,6 @@ class Actor:
         base_url="https://llm.chutes.ai/v1",
         timeout=600,
         temperature=0.7,
-        max_tokens=16384,
         api_key: str = None,
         task_id: int = None,
         seed: int = None,
@@ -167,7 +165,6 @@ class Actor:
             base_url: Base URL for LLM API
             timeout: Timeout for LLM API calls
             temperature: Temperature for LLM generation
-            max_tokens: Maximum tokens to generate (default: 16384)
             api_key: Override API key for this evaluation. If not provided, uses instance api_key
             task_id: Task ID that encodes both task type and seed.
                      Task type is determined by: task_id // 100,000,000
@@ -240,7 +237,7 @@ class Actor:
         # Call LLM using task_id as seed
         usage = None
         try:
-            resp, usage = await self._llm_chat(challenge.prompt, model, base_url, timeout, temperature, current_api_key, task_id, max_tokens)
+            resp, usage = await self._llm_chat(challenge.prompt, model, base_url, timeout, temperature, current_api_key, task_id)
             error = None
         except Exception as e:
             import traceback
