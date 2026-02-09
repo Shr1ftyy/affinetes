@@ -76,6 +76,8 @@ class BasilicaBackend(AbstractBackend):
             env_type_override: Force environment type detection
             **kwargs: Additional backend parameters:
                 - ttl_buffer: Time-to-live buffer in seconds (default: 300)
+                - storage: Persistent storage mount path (e.g., "/opt/taichi-cache").
+                  Passed to basilica-sdk create_deployment() for R2-backed FUSE volumes.
         """
         self.image = image
         self.kwargs = kwargs
@@ -93,6 +95,7 @@ class BasilicaBackend(AbstractBackend):
         self.cpu = cpu_limit or "2000m"
         self.memory = mem_limit or "8Gi"
         self.ttl_buffer = kwargs.get("ttl_buffer", 300)
+        self.storage = kwargs.get("storage", None)
 
         # Environment variables to pass to pod
         self.env_vars = env_vars or {}
@@ -184,13 +187,14 @@ class BasilicaBackend(AbstractBackend):
         cpu = self.cpu
         memory = self.memory
         env_vars = self.env_vars
+        storage = self.storage
 
         def _sync_create_and_wait() -> Any:
             """Synchronous SDK operations to run in thread pool."""
             os.environ["BASILICA_API_TOKEN"] = api_token
             client = BasilicaClient()
 
-            response = client.create_deployment(
+            create_kwargs: Dict[str, Any] = dict(
                 instance_name=deployment_name,
                 image=image,
                 port=8000,
@@ -200,6 +204,10 @@ class BasilicaBackend(AbstractBackend):
                 public=True,
                 env=env_vars,
             )
+            if storage is not None:
+                create_kwargs["storage"] = storage
+
+            response = client.create_deployment(**create_kwargs)
 
             logger.debug(f"Deployment created: {response.instance_name}")
 
